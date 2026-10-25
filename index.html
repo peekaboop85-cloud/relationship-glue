@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>关系复原胶</title>
+<style>
+/* Layout: one-screen phone card (ask) that swaps to a "repaired heart" scene (done). Deliberately light-only, matching the reference screenshots. */
+:root {
+  --ground: #F2F4F3;
+  --card: #FFFFFF;
+  --ink: #262626;
+  --ink-soft: #6B6E6D;
+  --teal-a: #1DCAB4;
+  --teal-b: #0FA08F;
+  --brick: #A9412F;
+  --night-core: #2A6CAB;
+  --night-mid: #153B72;
+  --night-edge: #0A173A;
+  --font: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  color-scheme: light;
+}
+html { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+body.is-done { overflow-y: auto; }
+
+.screen {
+  min-height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-block: 20px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* ---------- ask ---------- */
+.card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(30, 50, 45, .08), 0 1px 2px rgba(0, 0, 0, .04);
+  padding: clamp(24px, 5vh, 36px) clamp(18px, 5vw, 28px) clamp(22px, 4vh, 30px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(24px, 7vw, 31px);
+  font-weight: 500;
+  letter-spacing: .02em;
+  text-wrap: balance;
+}
+.sub {
+  margin: 10px 0 0;
+  font-size: clamp(14px, 4vw, 16.5px);
+  color: var(--ink-soft);
+  line-height: 1.5;
+  text-wrap: balance;
+}
+.plaster-stage {
+  width: 100%;
+  height: clamp(140px, 30vh, 250px);
+  display: grid;
+  place-items: center;
+}
+.plaster {
+  width: min(80%, 300px);
+  overflow: visible;
+  filter: drop-shadow(0 16px 12px rgba(70, 45, 10, .28));
+  animation: bob 3.4s ease-in-out infinite;
+}
+@keyframes bob {
+  0%, 100% { transform: rotate(-9deg) translateY(0); }
+  50% { transform: rotate(-6deg) translateY(-7px); }
+}
+.plaster .eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: blink 4.2s infinite;
+}
+@keyframes blink {
+  0%, 91%, 100% { transform: scaleY(1); }
+  94% { transform: scaleY(.12); }
+}
+
+.actions {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(14px, 5vw, 24px);
+}
+.slot { height: 54px; }
+.btn {
+  appearance: none;
+  border: 0;
+  border-radius: 10px;
+  height: 54px;
+  width: 100%;
+  font: 500 clamp(17px, 5vw, 21px)/1 var(--font);
+  letter-spacing: .06em;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+.btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+#yes {
+  position: relative;
+  z-index: 30;
+  background: linear-gradient(135deg, var(--teal-a), var(--teal-b));
+  box-shadow: 0 8px 20px rgba(16, 168, 148, .3);
+  transition: transform .5s cubic-bezier(.34, 1.56, .64, 1), box-shadow .2s;
+}
+.yes-label {
+  display: inline-block;
+  transition: transform .5s cubic-bezier(.34, 1.56, .64, 1);
+}
+#no {
+  position: relative;
+  z-index: 5;
+  background: var(--brick);
+  box-shadow: 0 6px 16px rgba(150, 50, 35, .22);
+  transform: scale(var(--shrink, 1));
+}
+#no.loose {
+  position: fixed;
+  width: auto;
+  min-width: 120px;
+  padding: 0 24px;
+  transition: left .34s cubic-bezier(.22, 1, .36, 1), top .34s cubic-bezier(.22, 1, .36, 1), transform .3s;
+}
+#ask.leaving { opacity: 0; transition: opacity .3s; }
+
+/* ---------- done ---------- */
+.done-wrap {
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.done-title {
+  font-size: clamp(30px, 9.5vw, 42px);
+  font-weight: 600;
+  letter-spacing: .03em;
+}
+.done-sub {
+  margin: 12px 0 0;
+  font-size: clamp(17px, 5.2vw, 22px);
+  color: #555958;
+  text-wrap: balance;
+}
+.trip {
+  margin: 14px 0 0;
+  font-size: clamp(28px, 9vw, 40px);
+  font-weight: 800;
+  letter-spacing: .05em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.scene {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 10;
+  margin-top: clamp(28px, 6vh, 48px);
+  border-radius: 18px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 50%, var(--night-core) 0%, var(--night-mid) 40%, var(--night-edge) 100%);
+  box-shadow: 0 20px 44px rgba(10, 24, 58, .3);
+}
+#rays { position: absolute; inset: 0; width: 100%; height: 100%; }
+.heart {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 46%;
+  overflow: visible;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, .35));
+}
+.heart .beat { transform-box: view-box; transform-origin: 100px 100px; }
+.heart .half { transform-box: view-box; transform-origin: 100px 176px; }
+.heart .crack { opacity: 0; }
+.heart .patch { transform-box: fill-box; transform-origin: center; }
+
+.play .half-l { animation: joinL 1s cubic-bezier(.3, 1.5, .5, 1) both; }
+.play .half-r { animation: joinR 1s cubic-bezier(.3, 1.5, .5, 1) both; }
+.play .crack { animation: crack 2s both; }
+.play .whole { animation: seal 1.4s both; }
+.play .patch { animation: stick .62s .8s cubic-bezier(.2, 1.5, .4, 1) both; }
+.play .beat { animation: beat 1.4s 1.7s ease-in-out infinite; }
+@keyframes joinL {
+  0%, 40% { transform: translate(-12px, 0) rotate(-15deg); }
+  100% { transform: none; }
+}
+@keyframes joinR {
+  0%, 40% { transform: translate(12px, 0) rotate(15deg); }
+  100% { transform: none; }
+}
+@keyframes seal {
+  0%, 70% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes crack {
+  0%, 55% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes stick {
+  0% { transform: translateY(-80px) scale(1.9) rotate(20deg); opacity: 0; }
+  55% { transform: translateY(5px) scale(1.06, .9); opacity: 1; }
+  78% { transform: translateY(-2px) scale(.97, 1.04); }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes beat {
+  0%, 60%, 100% { transform: scale(1); }
+  15% { transform: scale(1.08); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.05); }
+}
+.play-text > * { animation: rise .55s cubic-bezier(.2, 1.3, .4, 1) both; }
+.play-text > :nth-child(2) { animation-delay: .1s; }
+.play-text > :nth-child(3) { animation-delay: 1.9s; }
+@keyframes rise {
+  from { transform: translateY(14px) scale(.94); opacity: .2; }
+  to { transform: none; opacity: 1; }
+}
+.again {
+  margin-top: 26px;
+  appearance: none;
+  background: transparent;
+  border: 1.5px solid #C9CDCB;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 10px 22px;
+  font: 500 15px/1 var(--font);
+  letter-spacing: .08em;
+  cursor: pointer;
+}
+.again:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: .01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<section id="ask" class="screen">
+  <div class="card">
+    <h1>要使用关系复原胶吗？</h1>
+    <p class="sub">把裂开的关系重新粘好，再给彼此一次机会</p>
+
+    <div class="plaster-stage">
+      <svg class="plaster" viewBox="0 0 340 150" aria-hidden="true">
+        <defs>
+          <pattern id="dotsLight" width="17" height="17" patternUnits="userSpaceOnUse">
+            <circle cx="5" cy="5" r="1.7" fill="#D7A766"/>
+          </pattern>
+          <pattern id="dotsPad" width="17" height="17" patternUnits="userSpaceOnUse">
+            <circle cx="5" cy="5" r="1.7" fill="#C2722F"/>
+          </pattern>
+          <clipPath id="plasterBody">
+            <rect x="4" y="4" width="332" height="142" rx="30"/>
+          </clipPath>
+          <linearGradient id="plasterGloss" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#FFFFFF" stop-opacity=".45"/>
+            <stop offset=".55" stop-color="#FFFFFF" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <g clip-path="url(#plasterBody)">
+          <rect width="340" height="150" fill="#F8E0A8"/>
+          <rect width="340" height="150" fill="url(#dotsLight)"/>
+          <rect x="112" width="116" height="150" fill="#DF9452"/>
+          <rect x="112" width="116" height="150" fill="url(#dotsPad)"/>
+          <rect width="340" height="80" fill="url(#plasterGloss)"/>
+        </g>
+        <rect x="4" y="4" width="332" height="142" rx="30" fill="none" stroke="#D18C2E" stroke-width="5"/>
+        <ellipse cx="134" cy="92" rx="15" ry="9.5" fill="#EE8668" opacity=".7"/>
+        <ellipse cx="206" cy="92" rx="15" ry="9.5" fill="#EE8668" opacity=".7"/>
+        <g class="eyes">
+          <ellipse cx="152" cy="64" rx="5.5" ry="8.5" fill="#5A3117"/>
+          <ellipse cx="188" cy="64" rx="5.5" ry="8.5" fill="#5A3117"/>
+        </g>
+        <path d="M146 92 Q170 114 194 92" fill="none" stroke="#5A3117" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <div class="actions">
+      <div class="slot"><button id="yes" class="btn" type="button"><span class="yes-label">使用复原胶</span></button></div>
+      <div class="slot"><button id="no" class="btn" type="button">暂不修复</button></div>
+    </div>
+  </div>
+</section>
+
+<section id="done" class="screen" hidden>
+  <div class="done-wrap">
+    <div class="play-text" id="doneText">
+      <h1 class="done-title">关系复原成功！</h1>
+      <p class="done-sub">愿我们把所有裂缝都慢慢补好</p>
+      <p class="trip">我们一起去旅游吧</p>
+    </div>
+
+    <div class="scene" id="scene">
+      <canvas id="rays"></canvas>
+      <svg class="heart" viewBox="0 0 200 184" aria-hidden="true">
+        <defs>
+          <linearGradient id="heartFill" x1="0" y1="0" x2=".35" y2="1">
+            <stop offset="0" stop-color="#FF7EBC"/>
+            <stop offset="1" stop-color="#E23E8C"/>
+          </linearGradient>
+          <clipPath id="clipL">
+            <polygon points="-20,-20 100,-20 100,36 90,60 108,84 92,110 106,136 100,200 -20,200"/>
+          </clipPath>
+          <clipPath id="clipR">
+            <polygon points="220,-20 100,-20 100,36 90,60 108,84 92,110 106,136 100,200 220,200"/>
+          </clipPath>
+          <pattern id="patchDots" width="9" height="9" patternUnits="userSpaceOnUse">
+            <circle cx="3" cy="3" r="1" fill="#D3A262"/>
+          </pattern>
+        </defs>
+        <g class="beat">
+          <path class="whole" fill="url(#heartFill)" d="M100 176 C52 140 10 104 10 60 C10 30 32 10 60 10 C78 10 92 20 100 36 C108 20 122 10 140 10 C168 10 190 30 190 60 C190 104 148 140 100 176 Z"/>
+          <g class="half half-l">
+            <path clip-path="url(#clipL)" fill="url(#heartFill)" d="M100 176 C52 140 10 104 10 60 C10 30 32 10 60 10 C78 10 92 20 100 36 C108 20 122 10 140 10 C168 10 190 30 190 60 C190 104 148 140 100 176 Z"/>
+          </g>
+          <g class="half half-r">
+            <path clip-path="url(#clipR)" fill="url(#heartFill)" d="M100 176 C52 140 10 104 10 60 C10 30 32 10 60 10 C78 10 92 20 100 36 C108 20 122 10 140 10 C168 10 190 30 190 60 C190 104 148 140 100 176 Z"/>
+            <ellipse cx="152" cy="42" rx="17" ry="11" transform="rotate(-38 152 42)" fill="#FFFFFF" opacity=".42"/>
+          </g>
+          <polyline class="crack" points="100,36 90,60 108,84 92,110 106,136" fill="none" stroke="#9E2160" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <g class="patch">
+            <g transform="translate(100 94) rotate(-8)">
+              <rect x="-46" y="-20" width="92" height="40" rx="12" fill="#F8E3B4"/>
+              <rect x="-46" y="-20" width="92" height="40" rx="12" fill="url(#patchDots)"/>
+              <rect x="-17" y="-20" width="34" height="40" fill="#EC9A4C"/>
+              <rect x="-46" y="-20" width="92" height="40" rx="12" fill="none" stroke="#C98838" stroke-width="2"/>
+              <circle cx="-6" cy="-5" r="2.2" fill="#5A3117"/>
+              <circle cx="6" cy="-5" r="2.2" fill="#5A3117"/>
+              <path d="M-8 3 Q0 11 8 3" fill="none" stroke="#5A3117" stroke-width="2.2" stroke-linecap="round"/>
+            </g>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <button class="again" id="again" type="button">再粘一次</button>
+  </div>
+</section>
+
+<script>
+(() => {
+  const ask = document.getElementById('ask');
+  const done = document.getElementById('done');
+  const yes = document.getElementById('yes');
+  const no = document.getElementById('no');
+  const yesSlot = yes.parentElement;
+  const yesLabel = yes.querySelector('.yes-label');
+  const scene = document.getElementById('scene');
+  const doneText = document.getElementById('doneText');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const NO_LINES = ['暂不修复', '点不到哦', '再想想嘛', '别跑呀', '真的不修吗', '手滑了吧', '不可以', '就差一点', '还是修吧', '投降吧'];
+  let tries = 0;
+  let lastFlee = -Infinity;
+  let yesScale = { x: 1, y: 1 };
+  let yesShift = { x: 0, y: 0 };
+
+  function yesRect() {
+    const b = yesSlot.getBoundingClientRect();
+    const cx = b.left + b.width / 2 + yesShift.x;
+    const cy = b.top + b.height / 2 + yesShift.y;
+    const hw = b.width * yesScale.x / 2 + 10;
+    const hh = b.height * yesScale.y / 2 + 10;
+    return { l: cx - hw, r: cx + hw, t: cy - hh, b: cy + hh };
+  }
+
+  function overlapRatio(a, x, y, w, h) {
+    const ox = Math.max(0, Math.min(a.r, x + w) - Math.max(a.l, x));
+    const oy = Math.max(0, Math.min(a.b, y + h) - Math.max(a.t, y));
+    return (ox * oy) / (w * h);
+  }
+
+  function bounds() {
+    const cs = getComputedStyle(document.documentElement);
+    const pad = 14;
+    return {
+      left: pad,
+      top: pad + (parseFloat(cs.paddingTop) || 0),
+      right: document.documentElement.clientWidth - pad,
+      bottom: window.innerHeight - pad - (parseFloat(cs.paddingBottom) || 0),
+    };
+  }
+
+  // Grows (drifting toward the screen centre, height faster than width)
+  // until the yes button covers the whole viewport, so any tap lands on it.
+  function grow() {
+    const b = yesSlot.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth;
+    const vh = window.innerHeight;
+    const want = 1 + tries * .22 + tries * tries * .035;
+    const k = Math.min(1, (want - 1) / 2.5);
+    yesShift = { x: (vw / 2 - (b.left + b.width / 2)) * k, y: (vh / 2 - (b.top + b.height / 2)) * k };
+    const cx = b.left + b.width / 2 + yesShift.x;
+    const cy = b.top + b.height / 2 + yesShift.y;
+    const coverX = 2 * Math.max(cx, vw - cx) / b.width + .1;
+    const coverY = 2 * Math.max(cy, vh - cy) / b.height + .1;
+    yesScale = { x: Math.min(want, coverX), y: Math.min(want * (1 + tries * .08), coverY) };
+    yes.style.transform = `translate(${yesShift.x}px, ${yesShift.y}px) scale(${yesScale.x}, ${yesScale.y})`;
+    // Keep the label undistorted and inside the screen.
+    const f = Math.min(yesScale.x, yesScale.y, vw * .86 / yesLabel.offsetWidth);
+    yesLabel.style.transform = `scale(${f / yesScale.x}, ${f / yesScale.y})`;
+  }
+
+  function place(px, py) {
+    const box = bounds();
+    const w = no.offsetWidth;
+    const h = no.offsetHeight;
+    const cur = no.getBoundingClientRect();
+    const ccx = cur.left + cur.width / 2;
+    const ccy = cur.top + cur.height / 2;
+    if (px == null) { px = ccx; py = ccy; }
+    const avoid = yesRect();
+    let best = null;
+    let bestScore = -Infinity;
+    for (let i = 0; i < 60; i++) {
+      const x = box.left + Math.random() * Math.max(0, box.right - box.left - w);
+      const y = box.top + Math.random() * Math.max(0, box.bottom - box.top - h);
+      const cx = x + w / 2;
+      const cy = y + h / 2;
+      const score = Math.min(Math.hypot(cx - px, cy - py), 260)
+        + Math.min(Math.hypot(cx - ccx, cy - ccy), 200) * .5
+        - overlapRatio(avoid, x, y, w, h) * 400
+        + Math.random() * 90;
+      if (score > bestScore) { bestScore = score; best = { x, y }; }
+    }
+    no.style.left = best.x + 'px';
+    no.style.top = best.y + 'px';
+  }
+
+  function flee(px, py) {
+    const now = performance.now();
+    if (now - lastFlee < 200) return;
+    lastFlee = now;
+    tries++;
+    if (!no.classList.contains('loose')) {
+      const r = no.getBoundingClientRect();
+      no.style.left = r.left + 'px';
+      no.style.top = r.top + 'px';
+      document.body.appendChild(no);
+      no.classList.add('loose');
+      void no.offsetWidth;
+    }
+    no.textContent = NO_LINES[1 + (tries - 1) % (NO_LINES.length - 1)];
+    no.style.setProperty('--shrink', Math.max(.62, 1 - tries * .04));
+    grow();
+    place(px, py);
+    try { navigator.vibrate && navigator.vibrate(12); } catch (e) {}
+  }
+
+  no.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const t = e.touches[0];
+    flee(t.clientX, t.clientY);
+  }, { passive: false });
+  no.addEventListener('pointerdown', (e) => { e.preventDefault(); flee(e.clientX, e.clientY); });
+  no.addEventListener('click', (e) => { e.preventDefault(); flee(e.clientX, e.clientY); });
+  no.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flee(); }
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse' || no.hidden) return;
+    const r = no.getBoundingClientRect();
+    const dx = Math.max(r.left - e.clientX, 0, e.clientX - r.right);
+    const dy = Math.max(r.top - e.clientY, 0, e.clientY - r.bottom);
+    if (Math.hypot(dx, dy) < 30) flee(e.clientX, e.clientY);
+  });
+
+  window.addEventListener('resize', () => {
+    if (done.hidden && tries > 0) { grow(); place(); }
+    if (!done.hidden) sizeRays();
+  });
+
+  yes.addEventListener('click', () => {
+    no.hidden = true;
+    ask.classList.add('leaving');
+    setTimeout(() => {
+      ask.hidden = true;
+      done.hidden = false;
+      document.body.classList.add('is-done');
+      sizeRays();
+      play();
+    }, reduce ? 0 : 300);
+  });
+  document.getElementById('again').addEventListener('click', play);
+
+  function play() {
+    scene.classList.remove('play');
+    doneText.classList.remove('play-text');
+    void scene.offsetWidth;
+    scene.classList.add('play');
+    doneText.classList.add('play-text');
+    startRays();
+  }
+
+  // Speed lines radiating out from the heart.
+  const canvas = document.getElementById('rays');
+  const ctx = canvas.getContext('2d');
+  let W = 0, H = 0, raf = 0, lastT = 0;
+  const rays = Array.from({ length: 28 }, () => newRay(true));
+
+  function newRay(scatter) {
+    return { a: Math.random() * Math.PI * 2, t: scatter ? Math.random() : 0, v: .28 + Math.random() * .35 };
+  }
+
+  function sizeRays() {
+    const r = canvas.getBoundingClientRect();
+    const d = Math.min(window.devicePixelRatio || 1, 2);
+    W = r.width; H = r.height;
+    canvas.width = Math.round(W * d);
+    canvas.height = Math.round(H * d);
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+  }
+
+  function drawRays(dt) {
+    ctx.clearRect(0, 0, W, H);
+    const cx = W / 2, cy = H * .52;
+    const r0 = Math.min(W, H) * .34;
+    const r1 = Math.hypot(W, H) * .55;
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 2.2;
+    for (let i = 0; i < rays.length; i++) {
+      const ray = rays[i];
+      ray.t += ray.v * dt;
+      if (ray.t >= 1) rays[i] = Object.assign(ray, newRay(false));
+      const rr = r0 + (r1 - r0) * ray.t;
+      const len = 8 + 22 * ray.t;
+      const alpha = Math.sin(Math.PI * ray.t) * .85;
+      const c = Math.cos(ray.a), s = Math.sin(ray.a);
+      ctx.strokeStyle = `rgba(206, 228, 255, ${alpha})`;
+      ctx.beginPath();
+      ctx.moveTo(cx + c * rr, cy + s * rr);
+      ctx.lineTo(cx + c * (rr + len), cy + s * (rr + len));
+      ctx.stroke();
+    }
+  }
+
+  function tick(t) {
+    const dt = lastT ? Math.min((t - lastT) / 1000, .05) : 0;
+    lastT = t;
+    drawRays(dt);
+    if (!done.hidden && !document.hidden) raf = requestAnimationFrame(tick);
+    else raf = 0;
+  }
+
+  function startRays() {
+    if (reduce) { drawRays(0); return; }
+    if (!raf) { lastT = 0; raf = requestAnimationFrame(tick); }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && !done.hidden) startRays();
+  });
+})();
+</script>
+</body>
+</html>
